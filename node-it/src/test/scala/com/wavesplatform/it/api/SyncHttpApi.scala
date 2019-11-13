@@ -706,6 +706,16 @@ object SyncHttpApi extends Assertions {
     def height: Int = sync(async(n).grpc.height)
 
     def waitForHeight(expectedHeight: Int): Int = sync(async(n).grpc.waitForHeight(expectedHeight))
+
+    def setAssetScript(sender: KeyPair,
+                       assetId: String,
+                       script: Option[String],
+                       fee: Long,
+                       timestamp: Long = System.currentTimeMillis(),
+                       version: Int = 1,
+                       waitForTx: Boolean = false): PBSignedTransaction = {
+      maybeWaitForTransaction(sync(async(n).grpc.setAssetScript(sender, assetId, script, fee, timestamp, version)), waitForTx)
+    }
   }
 
 }

@@ -15,6 +15,7 @@ import com.wavesplatform.transaction.transfer.MassTransferTransaction
 import com.wavesplatform.transaction.transfer.MassTransferTransaction.ParsedTransfer
 import com.wavesplatform.transaction.{Proofs, TxValidationError}
 import com.wavesplatform.{transaction => vt}
+import com.wavesplatform.common.utils.EitherExt2
 
 object PBTransactions {
   import com.wavesplatform.protobuf.utils.PBInternalImplicits._
@@ -169,7 +170,7 @@ object PBTransactions {
               quantity,
               decimals.toByte,
               reissuable,
-              script.map(s => ScriptReader.fromBytes(s.bytes.toByteArray).right.get),
+              script.map(s => ScriptReader.fromBytes(s.bytes.toByteArray).explicitGet()),
               feeAmount,
               timestamp,
               proofs
