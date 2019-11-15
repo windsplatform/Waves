@@ -27,7 +27,7 @@ import com.wavesplatform.lang.v1.compiler.Terms
 import com.wavesplatform.lang.v1.compiler.Terms.FUNCTION_CALL
 import com.wavesplatform.protobuf.Amount
 import com.wavesplatform.protobuf.block.PBBlocks
-import com.wavesplatform.protobuf.transaction.{ExchangeTransactionData, IssueTransactionData, PBOrders, PBSignedTransaction, PBTransactions, Recipient, ReissueTransactionData, Script, SignedTransaction, TransferTransactionData}
+import com.wavesplatform.protobuf.transaction.{ExchangeTransactionData, IssueTransactionData, MassTransferTransactionData, PBOrders, PBSignedTransaction, PBTransactions, Recipient, ReissueTransactionData, Script, SignedTransaction, TransferTransactionData}
 import com.wavesplatform.state.{AssetDistribution, AssetDistributionPage, DataEntry, Portfolio}
 import com.wavesplatform.transaction.assets.exchange.Order
 import com.wavesplatform.transaction.assets.{BurnTransaction, IssueTransaction, SetAssetScriptTransaction, SponsorFeeTransaction}
@@ -949,6 +949,30 @@ object AsyncHttpApi extends Assertions {
       val req = BalancesRequest.of(address, Seq(ByteString.EMPTY))
       accounts.getBalances(req,obs)
       result.map(_.headOption.getOrElse(throw new NoSuchElementException("Balances not found for address")).getWaves).runToFuture
+    }
+
+    def broadcastMassTransfer(sender: KeyPair,
+                              assetId: Option[String] = None,
+                              transfers: Seq[MassTransferTransactionData.Transfer],
+                              attachment: ByteString = ByteString.EMPTY,
+                              fee: Long,
+                              version: Int = 1): Future[PBSignedTransaction] = {
+      val unsigned = PBTransaction(
+        chainId,
+        ByteString.copyFrom(sender.publicKey),
+        Some(Amount.of(ByteString.EMPTY, fee)),
+        System.currentTimeMillis(),
+        version,
+        PBTransaction.Data.MassTransfer(MassTransferTransactionData.of(
+          if (assetId.isDefined) ByteString.copyFrom(Base58.decode(assetId.get)) else ByteString.EMPTY,
+          transfers,
+          attachment
+        )))
+
+      val proofs = crypto.sign(sender, PBTransactions.vanilla(SignedTransaction(Some(unsigned))).explicitGet().bodyBytes())
+      val transaction = SignedTransaction.of(Some(unsigned), Seq(ByteString.copyFrom(proofs)))
+
+      transactions.broadcast(transaction)
     }
   }
 }

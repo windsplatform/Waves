@@ -21,7 +21,7 @@ import com.wavesplatform.http.DebugMessage
 import com.wavesplatform.it.Node
 import com.wavesplatform.lang.script.Script
 import com.wavesplatform.lang.v1.compiler.Terms
-import com.wavesplatform.protobuf.transaction.{PBSignedTransaction, PBTransactions, Recipient}
+import com.wavesplatform.protobuf.transaction.{MassTransferTransactionData, PBSignedTransaction, PBTransactions, Recipient}
 import com.wavesplatform.state.{AssetDistribution, AssetDistributionPage, DataEntry, Portfolio}
 import com.wavesplatform.transaction.Asset
 import com.wavesplatform.transaction.assets.IssueTransactionV2
@@ -90,7 +90,7 @@ object SyncHttpApi extends Assertions {
 
   def assertGrpcError[R](f: => R, errorRegex: String, expectedCode: Code): Assertion = Try(f) match {
     case Failure(GrpcStatusRuntimeException(status, _)) => Assertions.assert(status.getCode == expectedCode
-      && status.getDescription.matches(s".*$errorRegex.*"))
+      && status.getDescription.matches(s".*$errorRegex.*"), s"\nexpected '$errorRegex'\nactual '${status.getDescription}'")
     case Failure(e) => Assertions.fail(e)
     case Success(s) => Assertions.fail(s"Expecting bad request but handle $s")
   }
@@ -706,6 +706,16 @@ object SyncHttpApi extends Assertions {
     def height: Int = sync(async(n).grpc.height)
 
     def waitForHeight(expectedHeight: Int): Int = sync(async(n).grpc.waitForHeight(expectedHeight))
+
+    def broadcastMassTransfer(sender: KeyPair,
+                              assetId: Option[String] = None,
+                              transfers: Seq[MassTransferTransactionData.Transfer],
+                              attachment: ByteString = ByteString.EMPTY,
+                              fee: Long,
+                              version: Int = 1,
+                              waitForTx: Boolean = false): PBSignedTransaction = {
+      maybeWaitForTransaction(sync(async(n).grpc.broadcastMassTransfer(sender, assetId, transfers, attachment, fee, version)), waitForTx)
+    }
   }
 
 }
