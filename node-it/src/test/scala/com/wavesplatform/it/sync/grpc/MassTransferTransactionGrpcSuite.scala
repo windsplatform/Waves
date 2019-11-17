@@ -4,7 +4,7 @@ import com.google.protobuf.ByteString
 import com.wavesplatform.common.utils.Base58
 import com.wavesplatform.it.api.SyncHttpApi._
 import com.wavesplatform.it.sync._
-import com.wavesplatform.transaction.transfer.MassTransferTransaction.{MaxTransferCount}
+import com.wavesplatform.transaction.transfer.MassTransferTransaction.MaxTransferCount
 import com.wavesplatform.transaction.transfer.TransferTransaction.MaxAttachmentSize
 import com.wavesplatform.protobuf.transaction.MassTransferTransactionData.Transfer
 import com.wavesplatform.protobuf.transaction.{PBTransactions, Recipient}
@@ -177,5 +177,4 @@ class MassTransferTransactionGrpcSuite extends GrpcBaseTransactionSuite {
     sender.grpc.wavesBalance(secondAddress).regular shouldBe secondBalance.regular + transferAmount - minFee
     sender.grpc.wavesBalance(secondAddress).effective shouldBe secondBalance.effective + transferAmount - minFee
   }
-
 }
