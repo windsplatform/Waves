@@ -1006,7 +1006,7 @@ object AsyncHttpApi extends Assertions {
           attachment
         )))
 
-      val proofs = crypto.sign(sender, PBTransactions.vanilla(SignedTransaction(Some(unsigned))).explicitGet().bodyBytes())
+      val proofs = crypto.sign(sender, PBTransactions.vanilla(SignedTransaction(Some(unsigned)), unsafe = true).explicitGet().bodyBytes())
       val transaction = SignedTransaction.of(Some(unsigned), Seq(ByteString.copyFrom(proofs)))
 
       transactions.broadcast(transaction)
