@@ -4,7 +4,7 @@ import cats.implicits._
 import cats.{Id, Show}
 import com.wavesplatform.lang.contract.DApp
 import com.wavesplatform.lang.contract.DApp._
-import com.wavesplatform.lang.contract.meta.{MetaMapper, V1}
+import com.wavesplatform.lang.contract.meta.{MetaMapper, V1, V2}
 import com.wavesplatform.lang.directives.values.StdLibVersion
 import com.wavesplatform.lang.v1.compiler.CompilationError.{AlreadyDefined, Generic, WrongArgumentType}
 import com.wavesplatform.lang.v1.compiler.CompilerContext.vars
@@ -130,7 +130,7 @@ object ContractCompiler {
       callableFuncsTypeInfo = callableFuncsWithParams.map {
         case (f, typedParams) => typedParams.map(_._2)
       }
-      meta <- MetaMapper.toProto(V1)(callableFuncsTypeInfo)
+      meta <- MetaMapper.toProto(V2)(callableFuncsTypeInfo)
         .leftMap(Generic(contract.position.start, contract.position.start, _))
         .toCompileM
 
@@ -166,14 +166,13 @@ object ContractCompiler {
           case (pos, funcNamePart, argTypesPart) =>
             for {
               argTypes <- argTypesPart.toList.pure[CompileM]
-                .ensure(Generic(contract.position.start, contract.position.start, "Annotated function should not have generic parameter types"))(_.forall(_._2.isEmpty))
                 .flatMap(_.traverse(t => handleValid(t._1)))
               funcName <- handleValid(funcNamePart)
             } yield (pos, funcName.v, argTypes.map(_.v))
         }
         .pure[CompileM]
       _ <- annotatedFuncsArgTypesCM.flatMap { annotatedFuncs =>
-        annotatedFuncs.find(af => af._3.find(!Types.nativeTypeList.contains(_)).nonEmpty).fold(().pure[CompileM]) { af =>
+        annotatedFuncs.find(af => af._3.exists(!Types.nativeTypeList.contains(_))).fold(().pure[CompileM]) { af =>
           val wrongArgType = af._3.find(!Types.nativeTypeList.contains(_)).getOrElse("")
           raiseError[Id, CompilerContext, CompilationError, Unit](WrongArgumentType(af._1.start, af._1.end, af._2, wrongArgType, Types.nativeTypeList))
         }
